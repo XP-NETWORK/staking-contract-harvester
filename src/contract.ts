@@ -64,7 +64,7 @@ let totalAvailableRewards: BigNumber[] = [];
 const getTotalAvailableRewards = async () => {
   const lastNonce = await StakerContract.functions.totalSupply();
   console.log("TOTAL SUPPLY: ", lastNonce.toString());
-  for (let i = totalAvailableRewards.length; i <= 10; i++) {
+  for (let i = totalAvailableRewards.length; i <= lastNonce; i++) {
     try {
       let stake = await axios.get(
         `https://staking-api.xp.network/staking-nfts/${i}`
