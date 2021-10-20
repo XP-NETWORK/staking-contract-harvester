@@ -30,40 +30,68 @@ const APY = {
   31536000: 1.25,
 };
 
-// let availableRewards: BigNumber[] = [];
+let availableRewards: {
+  //@ts-ignore
+  value: any;
+  //@ts-ignore
+  lockIn: any;
+  startTime: any;
+}[] = [];
 
-// const getOnMaturityRewards = async () => {
-//   const lastNonce = await StakerContract.functions.totalSupply();
-//   for (let i = availableRewards.length; i <= 4; i++) {
-//     try {
-//       let stake = await axios.get(
-//         `https://staking-api.xp.network/staking-nfts/${i}`
-//       );
+const getOnMaturityRewards = async () => {
+  const lastNonce = await StakerContract.functions.totalSupply();
+  for (let i = availableRewards.length; i <= lastNonce; i++) {
+    try {
+      let stake = await axios.get(
+        `https://staking-api.xp.network/staking-nfts/${i}`
+      );
 
-//       availableRewards.push({
-//         //@ts-ignore
-//         value: stake.data.attributes[0].value,
-//         //@ts-ignore
-//         lockIn: stake.data.attributes[2].value,
-//       });
-//     } catch (e) {
-//       break;
-//     }
-//   }
-//   const totalRewards = availableRewards.reduce((sum, current) => {
-//     const sumBN = BigNumber.from(sum.toString());
-//     const currentBN = BigNumber.from(current.toString());
-//     const rewards = currentBN.mul(APY);
-//     return sumBN.add(currentBN);
-//   });
-//   return totalRewards.toString();
-// };
+      availableRewards.push({
+        //@ts-ignore
+        value: stake.data.attributes[0].value,
+        //@ts-ignore
+        lockIn: stake.data.attributes[2].value,
+        //@ts-ignore
+        startTime: stake.data.attributes[1].value,
+      });
+    } catch (e) {
+      break;
+    }
+  }
+  let rewards = BigNumber.from("0");
+  for (let i = 0; i < availableRewards.length; i++) {
+    let lockIn = availableRewards[i].lockIn;
+    let value = availableRewards[i].value;
+    let startTime = availableRewards[i].startTime;
+    let currentTime = Math.floor(Date.now() / 1000);
+    let td = _calculateTimeDifference(currentTime, lockIn, startTime);
+    let valueBN = BigNumber.from(value.toString());
+    let rew = valueBN
+      .mul(1125)
+      .mul(td)
+      .div(lockIn / 1000)
+      .div(10000);
+    rewards = rewards.add(rew);
+  }
+  return rewards;
+};
+
+function _calculateTimeDifference(
+  now: number,
+  lockIn: number,
+  startTime: number
+) {
+  if (now - startTime > lockIn) {
+    return lockIn;
+  } else {
+    return now - startTime;
+  }
+}
 
 let totalAvailableRewards: BigNumber[] = [];
 
 const getTotalAvailableRewards = async () => {
   const lastNonce = await StakerContract.functions.totalSupply();
-  console.log("TOTAL SUPPLY: ", lastNonce.toString());
   for (let i = totalAvailableRewards.length; i <= lastNonce; i++) {
     try {
       let stake = await axios.get(
@@ -92,6 +120,6 @@ const getBalanceOfContract = async () => {
 export default {
   getStakedSum,
   getBalanceOfContract,
-  // getOnMaturityRewards,
+  getOnMaturityRewards,
   getTotalAvailableRewards,
 };
